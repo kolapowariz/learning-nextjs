@@ -16,27 +16,64 @@ async function getUser(email: string): Promise<User | undefined> {
   }
 }
  
-export const { auth, signIn, signOut } = NextAuth({
+
+const nextAuth = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
+      credentials: {
+        email: {},
+        password: {},
+      },
       async authorize(credentials) {
-        const parsedCredentials = z
-          .object({ email: z.string().email(), password: z.string().min(6) })
-          .safeParse(credentials);
- 
-        if (parsedCredentials.success) {
-          const { email, password } = parsedCredentials.data;
-          const user = await getUser(email);
-          if (!user) return null;
-          const passwordsMatch = await bcrypt.compare(password, user.password);
+        // console.log('credentials', credentials);
+        const email = credentials.email as string;
+        const password = credentials.password as string;
 
-          if (passwordsMatch) return user;
+        const user = await getUser(email);
+        // console.log('user', user);
+        if (!user) {
+          return null;
+        }
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        // console.log('passwordMatch', passwordMatch);
+
+        if (passwordMatch) {
+          console.log('logged in');
+          return user;
         }
 
-        console.log('Invalid credentials');    
+        console.log('invalid credentials');
         return null;
       },
     }),
   ],
 });
+ 
+export const { handlers, signIn, signOut, auth } = nextAuth;
+
+
+// export const { auth, signIn, signOut } = NextAuth({
+//   ...authConfig,
+//   providers: [
+//     Credentials({
+//       async authorize(credentials) {
+//         const parsedCredentials = z
+//           .object({ email: z.string().email(), password: z.string().min(6) })
+//           .safeParse(credentials);
+ 
+//         if (parsedCredentials.success) {
+//           const { email, password } = parsedCredentials.data;
+//           const user = await getUser(email);
+//           if (!user) return null;
+//           const passwordsMatch = await bcrypt.compare(password, user.password);
+
+//           if (passwordsMatch) return user;
+//         }
+
+//         console.log('Invalid credentials');    
+//         return null;
+//       },
+//     }),
+//   ],
+// });
